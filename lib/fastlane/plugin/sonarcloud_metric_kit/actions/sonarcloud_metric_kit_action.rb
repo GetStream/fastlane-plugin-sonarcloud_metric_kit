@@ -13,7 +13,7 @@ module Fastlane
 
       def self.collect_metrics(params)
         metrics = {}
-        measures = measures(params)
+        measures = get_measures(params)
         metric_keys.each do |key|
           metric = measures.find { |m| m['metric'] == key.to_s }
           metrics[key.to_sym] =
@@ -27,7 +27,7 @@ module Fastlane
         end
         return metrics unless params[:quality_gate]
 
-        quality_gate = quality_gate(params)
+        quality_gate = get_quality_gate(params)
         metrics[:quality_gate] = quality_gate
         if params[:period] && quality_gate['periods'].size > params[:period]
           metrics[:period_value] = quality_gate['periods'][params[:period]]['parameter']
@@ -35,14 +35,14 @@ module Fastlane
         metrics
       end
 
-      def self.measures(params)
+      def self.get_measures(params)
         queries = "componentKey=#{params[:project_key]}&metricKeys=#{metric_keys.join(',')}"
         url = URI("#{api_url}/measures/component?#{queries}")
         response = request(url, token: params[:sonar_token])
         json_parse(response.read_body)['component']['measures']
       end
 
-      def self.quality_gate(params)
+      def self.get_quality_gate(params)
         url = URI("#{api_url}/qualitygates/project_status?projectKey=#{params[:project_key]}")
         JSON.parse(request(url, token: params[:sonar_token]).read_body)['projectStatus']
       end
