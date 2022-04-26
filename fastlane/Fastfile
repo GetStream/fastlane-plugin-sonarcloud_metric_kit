@@ -1,0 +1,29 @@
+skip_docs
+
+lane :release do
+  UI.user_error!('This lane requires "GITHUB_TOKEN"') unless ENV.fetch('GITHUB_TOKEN')
+
+  sh('bundle exec rake build')
+  gem = "pkg/fastlane-plugin-sonarcloud_metric_kit-#{version}.gem"
+  output = sh("gem push ../#{gem}")
+
+  if output.include?('Successfully registered gem')
+    UI.success(output)
+    set_github_release(
+      repository_name: 'GetStream/fastlane-plugin-sonarcloud_metric_kit',
+      api_token: ENV.fetch('GITHUB_TOKEN'),
+      name: "SonarCloud MetrickKit v#{version}",
+      tag_name: "v#{version}",
+      description: "v#{version}",
+      commitish: git_branch,
+      upload_assets: [gem]
+    )
+  else
+    UI.user_error!(output)
+  end
+end
+
+def version
+  version_path = '../lib/fastlane/plugin/sonarcloud_metric_kit/version.rb'
+  File.read(version_path).scan(/\d+/).join('.')
+end
