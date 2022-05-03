@@ -36,15 +36,21 @@ module Fastlane
       end
 
       def self.get_measures(params)
-        queries = "componentKey=#{params[:project_key]}&metricKeys=#{metric_keys.join(',')}"
-        url = URI("#{api_url}/measures/component?#{queries}")
-        response = request(url, token: params[:sonar_token])
-        json_parse(response.read_body)['component']['measures']
+        queries = ["componentKey=#{params[:project_key]}", "metricKeys=#{metric_keys.join(',')}"]
+        queries << "branch=#{params[:branch]}" if params[:branch]
+        url = URI("#{api_url}/measures/component?#{queries.join('&')}")
+        response = json_parse(request(url, token: params[:sonar_token]).read_body)
+        UI.user_error!(response) unless response['component']
+        response['component']['measures']
       end
 
       def self.get_quality_gate(params)
-        url = URI("#{api_url}/qualitygates/project_status?projectKey=#{params[:project_key]}")
-        JSON.parse(request(url, token: params[:sonar_token]).read_body)['projectStatus']
+        queries = ["projectKey=#{params[:project_key]}"]
+        queries << "branch=#{params[:branch]}" if params[:branch]
+        url = URI("#{api_url}/qualitygates/project_status?#{queries.join('&')}")
+        response = json_parse(request(url, token: params[:sonar_token]).read_body)
+        UI.user_error!(response) unless response['projectStatus']
+        response['projectStatus']
       end
 
       def self.request(url, token:)
@@ -166,6 +172,12 @@ module Fastlane
             is_string: false,
             optional: true,
             default_value: false
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :branch,
+            description: 'Git branch to use for collecting metrics',
+            is_string: true,
+            optional: true
           )
         ]
       end
