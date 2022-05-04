@@ -16,6 +16,8 @@ module Fastlane
         measures = get_measures(params)
         metric_keys.each do |key|
           metric = measures.find { |m| m['metric'] == key.to_s }
+          next unless metric
+
           metrics[key.to_sym] =
             if metric['value']
               metric['value']
